@@ -1,0 +1,46 @@
+version: '3'
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  koha:
+    driver: local
+
+services:
+    mariadb:
+      build:
+        context: ./mariadb
+      volumes:
+        - ./data/mariadb:/var/lib/mysql
+        - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      ports:
+        - "3306:3306"
+      environment:
+        - MYSQL_DATABASE=koha
+        - MYSQL_USER=koha
+        - MYSQL_PASSWORD=secret
+        - MYSQL_ROOT_PASSWORD=root
+      networks:
+        - backend
+    koha:
+      build:
+        context: ./koha
+        args:
+          - REPO=${REPO}
+          - REPO_KEY=${REPO_KEY}
+          - REPO_DISTRIBUTION=${REPO_DISTRIBUTION}
+      volumes:
+        - ${KOHA_REPO_LOCATION}:/Koha
+      cap_add:
+        - SYS_NICE
+        - DAC_READ_SEARCH
+      ports:
+        - "80:80"
+        - "8080:8080" 
+        # - "6001:6001" #SIP Raw
+        # - "8023:8023" # SIP telnet
+      networks:
+        - backend
+
